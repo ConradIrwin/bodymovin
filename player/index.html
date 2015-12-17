@@ -54,6 +54,8 @@
     <li>Name: <input id="nameInput" onchange="localStorage.name = this.value"></li>
     <li><input type="submit" value="Render" onclick="render()" /></li>
     <li><a style="visibility:  hidden" id="downloadLink" href="#" download />Download</a></li>
+    <li><style style="display:block; white-space: pre; font-family: monospace" id="scssOutput"></style></li>
+    <li>Hover to preview:<div style=" display: inline-block; border: 1px solid black; width: auto;"><div class="animation"></div></span>
   </ul>
 
 <script>
@@ -117,15 +119,36 @@
             while (r = document.querySelector("defs")) {
               r.remove();
             }
-            document.querySelector("svg").setAttribute('width', (size - 2 * border) * (numFrames));
+            width = (size - 2 * border) * (numFrames)
+            document.querySelector("svg").setAttribute('width', width);
 
             encoder = new TextEncoder("utf8");
             bytes = encoder.encode(ctx.getSerializedSvg());
 
             blob = new Blob([bytes], {type: "image/svg+xml"})
+            url = URL.createObjectURL(blob);
+
+            scssOutput.innerHTML = ".animation {\n" +
+              "  width: " + (size - 2 * border) + "px;\n" +
+              "  height: " + (size - 2 * border) + "px;\n" +
+              "  overflow: hidden;\n" +
+              "}\n" +
+              ".animation::before {\n" +
+              "    width: " + width  + "px;\n" +
+              "    height: " + (size - border) + "px;\n" +
+              "    display: block;\n" +
+              "    content: \" \";\n" +
+              "    transform: translateX(0px);\n " +
+              "    background-image: url(" + url + ");\n" +
+              "}\n" +
+              ".animation:hover::before {\n" +
+              "  transform: translateX(-" + (width - size + 2 * border) + "px);\n" +
+              "  transition: transform " + (duration - firstFrame) + "ms steps(" + (numFrames - 1) + ");\n" +
+              "}\n";
+
 
             downloadLink.style.visibility = "visible";
-            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.href = url;
             downloadLink.download = nameInput.value;
           }
         }, framesPerSecond);
