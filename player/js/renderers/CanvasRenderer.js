@@ -1,7 +1,7 @@
 function CanvasRenderer(animationItem, config){
     this.animationItem = animationItem;
     this.renderConfig = {
-        clearCanvas: (config && config.clearCanvas) || true,
+        clearCanvas: false,
         context: (config && config.context) || null,
         scaleMode: (config && config.scaleMode) || 'fit'
     };
@@ -307,8 +307,6 @@ CanvasRenderer.prototype.renderFrame = function(num){
         this.save();
     }
     this.ctxTransform(this.transformCanvas.props);
-    this.canvasContext.rect(0,0,this.transformCanvas.w,this.transformCanvas.h);
-    this.canvasContext.clip();
 
     ////this.globalData.bmCtx.clip(this.clipper);
 

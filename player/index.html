@@ -2,23 +2,6 @@
 <meta charset="UTF-8">
 <head>
     <style>
-        body{
-            background-color:#ccc;
-            margin: 0px;
-            height: 100%;
-            font-family: sans-serif;
-            font-size: 10px
-            overflow: hidden;
-        }
-        #bodymovin{
-            width:100%;
-            height:100%;
-            background-color:#ccc;
-            display:block;
-            overflow: hidden;
-            transform: translate3d(0,0,0);
-            margin: auto;
-        }
 
     </style>
     <!-- build:js bodymovin.js -->
@@ -54,24 +37,103 @@
     <script src="js/animation/AnimationManager.js"></script>
     <script src="js/animation/AnimationItem.js"></script>
     <script src="js/module.js"></script>
+    <script src="https://cdn.rawgit.com/gliffy/canvas2svg/master/canvas2svg.js"></script>
     <!-- endbuild -->
     <!-- <script src="bodymovin.js"></script> -->
 </head>
 <body>
+  <div id="animation"></div>
 
-<div id="bodymovin"></div>
+  <ul>
+    <li>bodymovin' JSON: <textarea id="jsonInput" onchange="localStorage.json = this.value"></textarea></li>
+    <li>Width/Height (px): <input id="sizeInput" onchange="localStorage.size = this.value"></li>
+    <li>Border to trim (px): <input id="borderInput" onchange="localStorage.border = this.value"></li>
+    <li>Last frame at (ms): <input id="durationInput" onchange="localStorage.duration = this.value"></li>
+    <li>First frame at (ms): <input id="firstFrameInput" onChange="localStorage.firstFrame = this.value"></li>
+    <li>Frames per second: <input id="fpsInput" onchange="localStorage.fps = this.value"></li>
+    <li>Name: <input id="nameInput" onchange="localStorage.name = this.value"></li>
+    <li><input type="submit" value="Render" onclick="render()" /></li>
+    <li><a style="visibility:  hidden" id="downloadLink" href="#" download />Download</a></li>
+  </ul>
 
 <script>
 
-    var animData = {
-        container: document.getElementById('bodymovin'),
-        renderer: 'svg',
-        loop: true,
-        prerender: false,
-        autoplay: true,
-        path: 'exports/render'
-    };
-    var anim = bodymovin.loadAnimation(animData);
+  jsonInput.value = localStorage.json || "{}";
+  sizeInput.value = localStorage.size || 50;
+  borderInput.value = localStorage.border || 0;
+  durationInput.value = localStorage.duration || 1600;
+  firstFrameInput.value = localStorage.firstFrame || 0;
+  fpsInput.value = localStorage.fps || 16;
+  nameInput.value = localStorage.name || 'star.svg';
+
+  var ctx;
+
+  function render() {
+    try {
+      if (previous = document.querySelector("svg")) {
+        previous.remove();
+      }
+
+      var size = parseInt(sizeInput.value);
+      var border = parseInt(borderInput.value);
+      var duration = parseInt(durationInput.value);
+      var framesPerSecond = parseInt(fpsInput.value);
+      var firstFrame = parseInt(firstFrameInput.value);
+
+      ctx = new C2S(size, size);
+
+        var animData = {
+            animType: 'canvas',
+            loop: true,
+            prerender: false,
+            autoplay: false,
+            animationData: JSON.parse(jsonInput.value),
+            renderer: {
+              context: ctx,
+              clearCanvas: false,
+              scaleMode: 'fit',
+              dpr: 1,
+            }
+        };
+        var anim = bodymovin.loadAnimation(animData);
+        i = firstFrame ;
+        var numFrames = 0;
+        ctx.translate(-border, -border);
+        interval = setInterval(function () {
+          if (numFrames > 0)
+            ctx.restore();
+          ctx.save();
+          ctx.translate((size - 2 * border) * (numFrames++), 0);
+          anim.goToAndStop(i += framesPerSecond);
+
+          if (i > duration) {
+            clearInterval(interval);
+
+            document.body.appendChild(ctx.getSvg());
+            while (r = document.querySelector("rect")) {
+              r.remove();
+            }
+
+            while (r = document.querySelector("defs")) {
+              r.remove();
+            }
+            document.querySelector("svg").setAttribute('width', (size - 2 * border) * (numFrames));
+
+            encoder = new TextEncoder("utf8");
+            bytes = encoder.encode(ctx.getSerializedSvg());
+
+            blob = new Blob([bytes], {type: "image/svg+xml"})
+
+            downloadLink.style.visibility = "visible";
+            downloadLink.href = URL.createObjectURL(blob);
+            downloadLink.download = nameInput.value;
+          }
+        }, framesPerSecond);
+      } catch (e) {
+        console.error(e);
+        alert('Sorry, something went wrong.');
+      }
+  }
 </script>
 </body>
 </html>
